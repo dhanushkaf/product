@@ -3,6 +3,8 @@ id: config_groups
 title: Config groups
 ---
 
+### Independenct config groups
+
 This example adds `mysql` and `postgresql` configs into the config group `database`.
 The config group `database` corresponds to the directory name inside the config directory in config-file based examples.
 
@@ -34,8 +36,8 @@ class Config(DictConfig):
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=Config)
-cs.store(group="database", name="mysql", path="db", node=MySQLConfig)
-cs.store(group="database", name="postgresql", path="db", node=PostGreSQLConfig)
+cs.store(group_path="database", name="mysql", node_root="db", node=MySQLConfig)
+cs.store(group_path="database", name="postgresql", node_root="db", node=PostGreSQLConfig)
 
 @hydra.main(config_name="config")
 def my_app(cfg: Config) -> None:
@@ -53,7 +55,7 @@ db:
   user: postgre_user
 ```
 
-#### Config inheritance
+### Config inheritance
 We can improve on the above example by modeling the configuration with inheritance.
 Noteworthy things in the example:
 - We can move fields to the top level class, reducing repetition of field names, type and default values
@@ -84,8 +86,8 @@ class Config(DictConfig):
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=Config)
-cs.store(group="database", name="mysql", path="db", node=MySQLConfig)
-cs.store(group="database", name="postgresql", path="db", node=PostGreSQLConfig)
+cs.store(group_path="database", name="mysql", node_root="db", node=MySQLConfig)
+cs.store(group_path="database", name="postgresql", node_root="db", node=PostGreSQLConfig)
 
 def connect_mysql(cfg: MySQLConfig) -> None:
     print(f"Connecting to MySQL: {cfg.host}:{cfg.port}")
@@ -110,3 +112,30 @@ Example output:
 $ python my_app_with_inheritance.py database=postgresql
 Connecting to PostGreSQL: localhost:5432 (timeout=10)
 ```
+
+### Warning about dataclasses instances with inheritance
+Instantiated dataclasses has a behavior that might be surprising when inheritance is involved.
+
+```python
+print("Object fields: ", asdict(MySQLConfig()))
+# Object fields:  {'host': 'localhost', 'port': '???', 'driver': '???'}
+
+print("With override: ", asdict(MySQLConfig(driver="mysql", port=1234)))
+# With override:  {'host': 'localhost', 'port': 1234, 'driver': 'mysql'}
+```
+
+If you instantiate the object, the fields are defined in the subclass are not overridden properly.
+
+Luckily, OmegaConf is handling the class itself correctly:
+```python
+cfg = OmegaConf.structured(MySQLConfig)
+print(cfg.pretty())
+```
+Outputs:
+```yaml
+host: localhost
+port: 3306
+driver: mysql
+```
+When using dataclass inheritance, prefer using class over the instance. 
+If you need to use the instance be sure to override all relevant fields.

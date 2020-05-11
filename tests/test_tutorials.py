@@ -128,7 +128,7 @@ def test_tutorial_config_file_bad_key(
     [
         ([], OmegaConf.create()),
         (
-            ["db=postgresql"],
+            ["database=postgresql"],
             OmegaConf.create(
                 {
                     "db": {

@@ -45,7 +45,7 @@ class MySQLConfig:
     ...
 
 cfg_store = ConfigStore.instance()
-cfg_store.store(name="config", path="db", node=MySQLConfig)
+cfg_store.store(name="config", node_root="db", node=MySQLConfig)
 
 @hydra.main(config_name="config")
 def my_app(cfg: DictConfig) -> None:
@@ -73,3 +73,4 @@ cfg_store.store(
 def my_app(cfg: DictConfig) -> None:
     print(f"Copying {cfg.src.host}:{cfg.src.port} to {cfg.dst.host}:{cfg.dst.port}")
 ```
+
